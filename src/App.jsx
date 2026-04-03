@@ -1,996 +1,1022 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring } from 'framer-motion';
+import './App.css';
 
-// Particle Background Component
+const navItems = [
+  { label: 'Skills', id: 'skills' },
+  { label: 'Competitive', id: 'competitive' },
+  { label: 'Extracurricular', id: 'extracurricular' },
+  { label: 'Projects', id: 'projects' },
+  { label: 'Education', id: 'education' },
+  { label: 'Contact', id: 'contact' },
+];
+
+const heroStats = [
+  { value: 3000, suffix: '+', label: 'Problems Solved' },
+  { value: 1431, suffix: '', label: 'Codeforces Rating' },
+  { value: 1914, suffix: '', label: 'LeetCode Rating' },
+  { value: 3.53, suffix: '', label: 'CGPA / 4.00' },
+];
+
+const signalItems = [
+  '3000+ Problems Solved',
+  'Specialist @ Codeforces',
+  'Knight @ LeetCode',
+  '4★ @ CodeChef',
+  'AI + Backend Engineering',
+  'RAG and LLM Workflows',
+  'Full-Stack Product Delivery',
+  'Open to SWE Opportunities',
+];
+
+const codeStreamSnippets = [
+  'const result = await rag.search(query);',
+  'if (cache.has(key)) return cache.get(key);',
+  'docker compose up --build',
+  'git push origin main',
+  'SELECT * FROM candidates WHERE score > 90;',
+  'for (const node of graph) dfs(node);',
+  'class Service { async execute() {} }',
+  'return stream.withCitations(answer);',
+  'vector<int> dp(n + 1, 0);',
+  'public async Task<IActionResult> Post()',
+  'npm run lint && npm run build',
+  'while (left <= right) { mid = (left + right) / 2; }',
+];
+
+const skillGroups = [
+  {
+    icon: '🧠',
+    title: 'Analytical Skills',
+    tags: ['Problem Solving', 'Algorithms', 'Data Structures'],
+  },
+  {
+    icon: '💻',
+    title: 'Programming',
+    tags: ['Java', 'C', 'C++', 'C#', 'Python', 'HTML', 'CSS', 'JavaScript', 'TypeScript', 'SQL'],
+  },
+  {
+    icon: '🧩',
+    title: 'Frameworks',
+    tags: ['Spring Boot', 'ASP.NET Core', 'React'],
+  },
+  {
+    icon: '🤖',
+    title: 'AI Skills & Tools',
+    tags: [
+      'Machine Learning',
+      'NLP',
+      'Prompt Engineering',
+      'RAG',
+      'Vector Embeddings',
+      'Semantic Search',
+      'LLM Integration',
+      'GitHub Copilot',
+      'OpenAI Codex',
+      'Antigravity',
+    ],
+    featured: true,
+  },
+  {
+    icon: '🗄️',
+    title: 'Database Management',
+    tags: ['PostgreSQL', 'MySQL', 'Database Indexing'],
+  },
+  {
+    icon: '🛠️',
+    title: 'Development Tools',
+    tags: ['VS Code', 'IntelliJ IDEA', 'Google Colab', 'Postman', 'Docker', 'Redis'],
+  },
+  {
+    icon: '🔁',
+    title: 'Version Control',
+    tags: ['Git', 'GitHub'],
+  },
+  {
+    icon: '⚙️',
+    title: 'Concepts',
+    tags: ['SDLC', 'OOP', 'Multithreading', 'Concurrency', 'Microservices', 'Rate Limiting'],
+  },
+];
+
+const platforms = [
+  { name: 'Codeforces', solved: '1600+', tone: 'teal' },
+  { name: 'LeetCode', solved: '1000+', tone: 'amber' },
+  { name: 'AtCoder', solved: '300+', tone: 'teal' },
+  { name: 'CodeChef', solved: '200+', tone: 'amber' },
+  { name: 'Beecrowd', solved: '100+', tone: 'teal' },
+  { name: 'HackerRank', solved: '50+', tone: 'amber' },
+];
+
+const achievements = [
+  {
+    platform: 'Codeforces',
+    title: 'Specialist (Max Rating: 1431)',
+    desc: 'Ranked 27th (Div 3) and 70th (Div 2) in Bangladesh.',
+    link: 'https://codeforces.com/profile/Parthib_Saha',
+  },
+  {
+    platform: 'CodeChef',
+    title: '4★ Coder (Max Rating: 1800)',
+    desc: 'Ranked 35th (Div 2) in Bangladesh.',
+    link: 'https://www.codechef.com/users/parthib53',
+  },
+  {
+    platform: 'LeetCode',
+    title: 'Knight (Max Rating: 1914)',
+    desc: 'Consistent high-performance across weekly contests.',
+    link: 'https://leetcode.com/u/parthibsahaprattus/',
+  },
+  {
+    platform: 'ICPC',
+    title: 'Honorable Mention',
+    desc: 'Team DIU_StriverS, Asia Dhaka Regional Preliminary.',
+    link: 'https://icpc.global/ICPCID/2GBDKQE5HN4G',
+  },
+];
+
+const extracurricularExperiences = [
+  {
+    icon: '📝',
+    period: '2022 - 2024',
+    title: 'Problem Setter & Judge',
+    org: 'Takeoff Programming Contest, DIU',
+    desc: 'Authored and stress-tested contest problems, balancing clarity, difficulty, and fairness for university-level competitions.',
+    tags: ['Problem Design', 'Test Cases', 'Contest Quality'],
+  },
+  {
+    icon: '👨‍🏫',
+    period: '2022 - 2024',
+    title: 'Trainer & Course Prefect',
+    org: 'Data Structures & Algorithms Course',
+    desc: 'Mentored students through structured DSA sessions and practical problem-solving drills to build long-term coding confidence.',
+    tags: ['Teaching', 'Mentorship', 'Competitive Training'],
+  },
+];
+
+const projects = [
+  {
+    icon: '🤖',
+    label: 'AI-Powered Application',
+    title: 'HireSense',
+    description:
+      'Built a role-based job portal for candidates, employers, and admins with AI resume analysis, automated job matching, candidate ranking, and secure JWT-based REST APIs backed by unit tests.',
+    tech: ['Java', 'Spring Boot', 'PostgreSQL', 'React', 'Groq (LLMs)', 'JWT', 'Docker', 'Redis'],
+    highlights: ['AI-driven hiring recommendations', 'Role-based workflows for admins and employers'],
+    link: 'https://github.com/parthibCsaha/AI-Powered-Job-Portal',
+  },
+  {
+    icon: '📈',
+    label: 'Real-Time Trading System',
+    title: 'Wall Street',
+    description:
+      'A high-throughput order book and matching engine simulation with concurrent trade processing and live event broadcasting through WebSockets.',
+    tech: ['Java', 'Spring Boot', 'PostgreSQL', 'WebSocket', 'React', 'STOMP'],
+    highlights: ['Concurrent matching engine architecture', 'Real-time trade updates via WebSocket'],
+    link: 'https://github.com/parthibCsaha/Real-Time-Stock-Matching-Engine',
+  },
+  {
+    icon: '🧠',
+    label: 'LLM + Knowledge Retrieval',
+    title: 'RAG Studio',
+    description:
+      'Built an AI-powered document search and Q&A system with document upload, semantic search, chunking, embeddings, vector retrieval, and real-time streaming responses with session-based chat and citations.',
+    tech: ['C#', 'ASP.NET Core', 'EF Core', 'PostgreSQL', 'Groq (LLM)', 'Hugging Face'],
+    highlights: ['Document-to-answer retrieval pipeline', 'Session-based chat with citation context'],
+    link: 'https://github.com/parthibCsaha/RAG-Studio',
+  },
+  {
+    icon: '🏥',
+    label: 'Healthcare Management Platform',
+    title: 'MediCore (Hospital Management System)',
+    description:
+      'Built scalable REST APIs for patients, doctors, appointments, and hospital operations using clean architecture, with JWT role-based access and secure API design.',
+    tech: ['C#', 'ASP.NET Core', 'EF Core', 'PostgreSQL', 'Swagger', 'Docker', 'JWT'],
+    highlights: ['Clean architecture for maintainability', 'Secure role-aware clinical workflow APIs'],
+    link: 'https://github.com/parthibCsaha/Hospital-Management-System',
+  },
+];
+
+const contacts = [
+  { icon: '📧', label: 'Email', text: 'parthibsahaprattus@gmail.com', link: 'mailto:parthibsahaprattus@gmail.com' },
+  { icon: '💼', label: 'LinkedIn', text: 'linkedin.com/in/parthib-saha-32b547260', link: 'https://www.linkedin.com/in/parthib-saha-32b547260/' },
+  { icon: '🐙', label: 'GitHub', text: 'github.com/parthibCsaha', link: 'https://github.com/parthibCsaha' },
+  { icon: '📱', label: 'Phone', text: '+8801704853732', link: 'tel:+8801704853732' },
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const staggerParent = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const setSpotlightPosition = (event) => {
+  const card = event.currentTarget;
+  const bounds = card.getBoundingClientRect();
+  const x = event.clientX - bounds.left;
+  const y = event.clientY - bounds.top;
+  card.style.setProperty('--spot-x', `${x}px`);
+  card.style.setProperty('--spot-y', `${y}px`);
+};
+
+const clearSpotlight = (event) => {
+  const card = event.currentTarget;
+  card.style.removeProperty('--spot-x');
+  card.style.removeProperty('--spot-y');
+};
+
+const ScrollProgress = () => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 110,
+    damping: 24,
+    mass: 0.15,
+  });
+
+  return <motion.div className="scroll-progress" style={{ scaleX }} />;
+};
+
+const CursorAura = () => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const smoothX = useSpring(x, { stiffness: 120, damping: 18, mass: 0.2 });
+  const smoothY = useSpring(y, { stiffness: 120, damping: 18, mass: 0.2 });
+  const smoothXSoft = useSpring(x, { stiffness: 70, damping: 24, mass: 0.4 });
+  const smoothYSoft = useSpring(y, { stiffness: 70, damping: 24, mass: 0.4 });
+  const reduceMotion = useReducedMotion();
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+
+    const mediaQuery = window.matchMedia('(pointer:fine)');
+    const syncPointerType = () => setEnabled(mediaQuery.matches);
+    syncPointerType();
+
+    const onMove = (event) => {
+      x.set(event.clientX);
+      y.set(event.clientY);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    mediaQuery.addEventListener('change', syncPointerType);
+
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      mediaQuery.removeEventListener('change', syncPointerType);
+    };
+  }, [reduceMotion, x, y]);
+
+  if (!enabled || reduceMotion) return null;
+
+  return (
+    <>
+      <motion.div className="cursor-aura" style={{ x: smoothX, y: smoothY }} />
+      <motion.div className="cursor-aura-secondary" style={{ x: smoothXSoft, y: smoothYSoft }} />
+    </>
+  );
+};
+
+const AuroraBackground = () => {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <div className="aurora-bg" aria-hidden="true">
+      <motion.div
+        className="aurora-wave aurora-wave-teal"
+        animate={reduceMotion ? { x: 0, y: 0, scale: 1 } : { x: [0, 70, -20, 0], y: [0, -35, 20, 0], scale: [1, 1.08, 0.98, 1] }}
+        transition={reduceMotion ? { duration: 0 } : { duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="aurora-wave aurora-wave-amber"
+        animate={reduceMotion ? { x: 0, y: 0, scale: 1 } : { x: [0, -85, 35, 0], y: [0, 25, -45, 0], scale: [1, 0.96, 1.06, 1] }}
+        transition={reduceMotion ? { duration: 0 } : { duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="aurora-wave aurora-wave-indigo"
+        animate={reduceMotion ? { x: 0, y: 0, scale: 1 } : { x: [0, 45, -55, 0], y: [0, 38, -28, 0], scale: [1, 1.05, 1, 1] }}
+        transition={reduceMotion ? { duration: 0 } : { duration: 34, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </div>
+  );
+};
+
+const CodeStreamBackground = () => {
+  const canvasRef = useRef(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.8);
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let animationFrameId;
+    let lastTime = 0;
+
+    const fontSize = 14;
+    const lineHeight = 24;
+    let rows = [];
+
+    const pickSnippet = () => codeStreamSnippets[Math.floor(Math.random() * codeStreamSnippets.length)];
+    const composeLine = () => `${pickSnippet()}   ${pickSnippet()}`;
+
+    const createRow = (y, initial = false) => {
+      const text = composeLine();
+      const textWidth = ctx.measureText(text).width;
+      const startX = initial ? Math.random() * (width + textWidth) - textWidth : width + Math.random() * 240;
+
+      return {
+        y,
+        text,
+        textWidth,
+        x: startX,
+        speed: 22 + Math.random() * 34,
+        alpha: 0.08 + Math.random() * 0.11,
+        tint: Math.random() > 0.8 ? 'amber' : 'teal',
+        cursorOffset: Math.random(),
+        cursorBlink: 1.5 + Math.random() * 1.4,
+      };
+    };
+
+    const setupRows = () => {
+      const totalRows = Math.floor(height / lineHeight) + 4;
+      rows = Array.from({ length: totalRows }, (_, index) => createRow((index + 1) * lineHeight - 6, true));
+    };
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = `600 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+      ctx.textBaseline = 'top';
+      setupRows();
+      ctx.clearRect(0, 0, width, height);
+    };
+
+    const animate = (time) => {
+      const dt = Math.min(0.05, (time - (lastTime || time)) / 1000);
+      lastTime = time;
+
+      ctx.fillStyle = 'rgba(5, 13, 22, 0.3)';
+      ctx.fillRect(0, 0, width, height);
+
+      rows.forEach((row, index) => {
+        row.x -= row.speed * dt;
+
+        if (row.x + row.textWidth < -120) {
+          rows[index] = createRow(row.y, false);
+          return;
+        }
+
+        const color = row.tint === 'amber'
+          ? `rgba(255, 191, 87, ${row.alpha})`
+          : `rgba(95, 231, 204, ${row.alpha})`;
+
+        ctx.fillStyle = color;
+        ctx.fillText(row.text, row.x, row.y);
+        ctx.fillText(row.text, row.x + row.textWidth + 120, row.y);
+
+        const cursorProgress = (time * 0.00011 * row.speed + row.cursorOffset) % 1;
+        const cursorX = row.x + cursorProgress * row.textWidth;
+        const blink = (Math.sin(time * 0.001 * row.cursorBlink * Math.PI * 2) + 1) * 0.5;
+
+        if (blink > 0.42 && cursorX > -10 && cursorX < width + 10) {
+          ctx.fillStyle = row.tint === 'amber' ? 'rgba(255, 191, 87, 0.2)' : 'rgba(95, 231, 204, 0.17)';
+          ctx.fillRect(cursorX, row.y + 1, 7, fontSize + 2);
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    resize();
+    animationFrameId = requestAnimationFrame(animate);
+    window.addEventListener('resize', resize);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resize);
+    };
+  }, [reduceMotion]);
+
+  if (reduceMotion) return null;
+
+  return <canvas ref={canvasRef} className="code-stream-bg" aria-hidden="true" />;
+};
+
 const ParticleBackground = () => {
   const canvasRef = useRef(null);
-  
+  const reduceMotion = useReducedMotion();
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.8);
+    let width = window.innerWidth;
+    let height = window.innerHeight;
     let animationFrameId;
-    
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    const particles = [];
-    const particleCount = 80;
-    
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 0.5;
-        this.speedX = Math.random() * 0.5 - 0.25;
-        this.speedY = Math.random() * 0.5 - 0.25;
-        this.opacity = Math.random() * 0.5 + 0.2;
-      }
-      
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        
-        if (this.x > canvas.width) this.x = 0;
-        if (this.x < 0) this.x = canvas.width;
-        if (this.y > canvas.height) this.y = 0;
-        if (this.y < 0) this.y = canvas.height;
-      }
-      
-      draw() {
-        ctx.fillStyle = `rgba(0, 245, 255, ${this.opacity})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
-    
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      particles.forEach(particle => {
-        particle.update();
-        particle.draw();
-      });
-      
-      // Draw connections
-      particles.forEach((particle1, i) => {
-        particles.slice(i + 1).forEach(particle2 => {
-          const dx = particle1.x - particle2.x;
-          const dy = particle1.y - particle2.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          if (distance < 150) {
-            ctx.strokeStyle = `rgba(0, 245, 255, ${0.15 * (1 - distance / 150)})`;
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(particle1.x, particle1.y);
-            ctx.lineTo(particle2.x, particle2.y);
-            ctx.stroke();
+
+    const pointer = { x: width * 0.5, y: height * 0.5, active: false };
+
+    const createParticle = () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: 0,
+      vy: 0,
+      size: Math.random() * 1.8 + 0.5,
+      alpha: Math.random() * 0.18 + 0.09,
+      phase: Math.random() * Math.PI * 2,
+      tint: Math.random() > 0.5 ? 'teal' : 'amber',
+    });
+
+    const getParticleCount = () => {
+      const density = reduceMotion ? 30000 : 21000;
+      return Math.min(140, Math.max(52, Math.floor((width * height) / density)));
+    };
+
+    let particles = [];
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      particles = Array.from({ length: getParticleCount() }, createParticle);
+    };
+
+    const fieldAngle = (x, y, time) => {
+      const waveA = Math.sin(x * 0.0019 + time * 0.7) * 1.8;
+      const waveB = Math.cos(y * 0.0014 - time * 0.45) * 1.5;
+      const swirl = Math.sin((x + y) * 0.00085 + time * 0.28) * 2.2;
+      return waveA + waveB + swirl;
+    };
+
+    const animate = (timeMs) => {
+      const time = timeMs * 0.001;
+
+      ctx.fillStyle = 'rgba(5, 13, 22, 0.14)';
+      ctx.fillRect(0, 0, width, height);
+
+      particles.forEach((particle) => {
+        const angle = fieldAngle(particle.x, particle.y, time);
+        const strength = reduceMotion ? 0.011 : 0.019;
+
+        particle.vx += Math.cos(angle) * strength;
+        particle.vy += Math.sin(angle) * strength;
+
+        if (pointer.active) {
+          const dx = pointer.x - particle.x;
+          const dy = pointer.y - particle.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const radius = 220;
+          if (dist > 0 && dist < radius) {
+            const pull = ((radius - dist) / radius) * (reduceMotion ? 0.02 : 0.05);
+            particle.vx += (dx / dist) * pull;
+            particle.vy += (dy / dist) * pull;
           }
-        });
+        }
+
+        particle.vx *= 0.945;
+        particle.vy *= 0.945;
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        if (particle.x > width + 2) particle.x = -2;
+        if (particle.x < -2) particle.x = width + 2;
+        if (particle.y > height + 2) particle.y = -2;
+        if (particle.y < -2) particle.y = height + 2;
+
+        const twinkle = 0.55 + Math.sin(time * 2.1 + particle.phase) * 0.45;
+        const alpha = particle.alpha * twinkle;
+        const color = particle.tint === 'teal' ? `rgba(95, 231, 204, ${alpha})` : `rgba(255, 191, 87, ${alpha * 0.9})`;
+
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
       });
-      
+
+      if (!reduceMotion) {
+        for (let i = 0; i < particles.length; i += 1) {
+          for (let j = i + 1; j < particles.length; j += 1) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const distanceSquared = dx * dx + dy * dy;
+            const limit = 105;
+            if (distanceSquared < limit * limit) {
+            const alpha = 0.07 * (1 - distanceSquared / (limit * limit));
+            ctx.strokeStyle = `rgba(148, 216, 255, ${alpha})`;
+            ctx.lineWidth = 0.45;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
       animationFrameId = requestAnimationFrame(animate);
     };
-    
-    animate();
-    
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+
+    const onPointerMove = (event) => {
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      pointer.active = true;
     };
-    
-    window.addEventListener('resize', handleResize);
-    
+
+    const onPointerLeave = () => {
+      pointer.active = false;
+    };
+
+    resize();
+    animationFrameId = requestAnimationFrame(animate);
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerleave', onPointerLeave);
+
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerleave', onPointerLeave);
     };
-  }, []);
-  
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
+  }, [reduceMotion]);
+
+  return <canvas ref={canvasRef} className="particle-bg" />;
 };
 
-// Animated Counter Component
-const AnimatedCounter = ({ end, duration = 2, suffix = '' }) => {
+const AnimatedCounter = ({ end, duration = 1.8, suffix = '' }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-  
+  const inView = useInView(ref, { once: true, margin: '-100px' });
+
   useEffect(() => {
-    if (!isInView) return;
-    
-    let start = 0;
-    const increment = end / (duration * 60);
-    
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 1000 / 60);
-    
-    return () => clearInterval(timer);
-  }, [isInView, end, duration]);
-  
-  return <span ref={ref}>{count}{suffix}</span>;
+    if (!inView) return undefined;
+
+    const startTime = performance.now();
+
+    const update = (now) => {
+      const progress = Math.min((now - startTime) / (duration * 1000), 1);
+      const next = progress * end;
+      setCount(Number.isInteger(end) ? Math.floor(next) : Number(next.toFixed(2)));
+
+      if (progress < 1) requestAnimationFrame(update);
+    };
+
+    requestAnimationFrame(update);
+    return undefined;
+  }, [duration, end, inView]);
+
+  return (
+    <span ref={ref}>
+      {count}
+      {suffix}
+    </span>
+  );
 };
 
-// Typing Effect Component
-const TypingEffect = ({ text, delay = 50 }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayText(prev => prev + text[currentIndex]);
-        setCurrentIndex(prev => prev + 1);
-      }, delay);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [currentIndex, text, delay]);
-  
-  return <span>{displayText}<span className="animate-pulse">|</span></span>;
+const SignalStrip = ({ className = '' }) => {
+  const reduceMotion = useReducedMotion();
+  const repeated = [...signalItems, ...signalItems];
+
+  return (
+    <section className={`signal-strip-wrap ${className}`.trim()} aria-label="Portfolio highlights ticker">
+      <div className="shell">
+        <div className="signal-strip">
+          <motion.div
+            className="signal-track"
+            animate={reduceMotion ? { x: 0 } : { x: '-50%' }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 24, repeat: Infinity, ease: 'linear' }}
+          >
+            {repeated.map((item, index) => (
+              <span key={`${item}-${index}`} className="signal-chip">
+                {item}
+              </span>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
 };
 
-// Navbar Component
+const SectionHeader = ({ eyebrow, title, subtitle }) => (
+  <motion.div
+    variants={fadeUp}
+    transition={{ duration: 0.6, ease: 'easeOut' }}
+    className="section-heading"
+  >
+    <div className="section-eyebrow">{eyebrow}</div>
+    <h2>{title}</h2>
+    {subtitle ? <p>{subtitle}</p> : null}
+  </motion.div>
+);
+
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
-  
+
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
-  
+
   return (
     <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-slate-950/80 backdrop-blur-xl border-b border-cyan-500/10' : 'bg-transparent'
-      }`}
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.55, ease: 'easeOut' }}
+      className={`main-nav ${scrolled ? 'is-scrolled' : ''}`}
     >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent"
-        >
+      <div className="shell nav-shell">
+        <a href="#home" className="brand-mark" aria-label="Go to top">
           PS
-        </motion.div>
-        
-        <div className="hidden md:flex gap-8">
-          {['Skills', 'Competitive', 'Volunteer', 'Projects', 'Contact'].map((item, i) => (
-            <motion.a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -2, color: '#00f5ff' }}
-              className="text-slate-400 hover:text-cyan-400 transition-colors text-sm font-medium"
-            >
-              {item}
-            </motion.a>
+        </a>
+
+        <div className="nav-links">
+          {navItems.map((item) => (
+            <a key={item.id} href={`#${item.id}`}>
+              {item.label}
+            </a>
           ))}
         </div>
+
+        <a href="#contact" className="nav-cta">
+          Hire Me
+        </a>
       </div>
     </motion.nav>
   );
 };
 
-// Hero Section
 const HeroSection = () => {
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, 300]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  
-  return (
-    <motion.section 
-      style={{ opacity }}
-      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20"
-    >
-      <div className="max-w-7xl mx-auto px-6 z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-8"
-        >
-          <span className="text-cyan-400 text-2xl">🚀</span>
-          <span className="text-cyan-400 text-sm font-semibold tracking-wider">
-            ASPIRING SOFTWARE ENGINEER & PROBLEM SOLVER
-          </span>
-        </motion.div>
-        
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-6xl md:text-8xl font-black mb-6 leading-tight"
-        >
-          Hi, I'm{' '}
-          <span className="bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient">
-            Parthib Saha
-          </span>
-        </motion.h1>
-        
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-lg md:text-xl text-slate-400 max-w-3xl mb-12 leading-relaxed"
-        >
-          Recent CS graduate and competitive programmer with 3000+ problems solved across multiple platforms. 
-          Eager to apply my problem-solving skills and passion for building scalable systems in a software engineering role.
-        </motion.p>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="flex flex-wrap gap-4 mb-16"
-        >
-          <motion.a
-            href="#projects"
-            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(0, 245, 255, 0.5)' }}
-            whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-full font-semibold text-sm shadow-lg"
-          >
-            View Projects
-          </motion.a>
-          
-          <motion.a
-            href="#contact"
-            whileHover={{ scale: 1.05, borderColor: '#00f5ff', backgroundColor: 'rgba(0, 245, 255, 0.1)' }}
-            whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 border-2 border-slate-700 text-slate-300 rounded-full font-semibold text-sm transition-all"
-          >
-            Get in Touch
-          </motion.a>
-        </motion.div>
-        
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-8"
-        >
-          {[
-            { value: 3000, suffix: '+', label: 'Problems Solved' },
-            { value: 1428, suffix: '', label: 'Codeforces Rating' },
-            { value: 1914, suffix: '', label: 'LeetCode Rating' },
-            { value: 3.53, suffix: '', label: 'CGPA' }
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 1.2 + i * 0.1 }}
-              whileHover={{ y: -5 }}
-              className="text-center group cursor-pointer"
-            >
-              <div className="text-4xl md:text-5xl font-black text-cyan-400 mb-2">
-                <AnimatedCounter end={stat.value} suffix={stat.suffix} />
-              </div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-      
-      {/* Floating gradient orbs */}
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          rotate: [0, 180, 360],
-        }}
-        transition={{ duration: 20, repeat: Infinity }}
-        className="absolute top-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
-      />
-      <motion.div
-        animate={{
-          scale: [1.2, 1, 1.2],
-          rotate: [360, 180, 0],
-        }}
-        transition={{ duration: 25, repeat: Infinity }}
-        className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
-      />
-    </motion.section>
-  );
-};
+  const roles = ['Software Engineer', 'Competitive Programmer', 'Problem Solver'];
+  const [roleIndex, setRoleIndex] = useState(0);
 
-// Skill Card Component
-const SkillCard = ({ icon, title, tags, delay }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay }}
-      whileHover={{ y: -10, scale: 1.02 }}
-      className="group relative bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-3xl p-8 overflow-hidden"
-    >
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
-      <div className="relative z-10">
-        <div className="text-5xl mb-6 group-hover:scale-110 transition-transform duration-300">
-          {icon}
-        </div>
-        
-        <h3 className="text-2xl font-bold text-white mb-6 group-hover:text-cyan-400 transition-colors">
-          {title}
-        </h3>
-        
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag, i) => (
-            <motion.span
-              key={tag}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={isInView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: delay + i * 0.05 }}
-              className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-full text-xs text-cyan-400 font-semibold"
-            >
-              {tag}
-            </motion.span>
-          ))}
-        </div>
-      </div>
-      
-      {/* Glowing border effect */}
-      <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-        <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
-      </div>
-    </motion.div>
-  );
-};
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRoleIndex((prev) => (prev + 1) % roles.length);
+    }, 2200);
 
-// Skills Section
-const SkillsSection = () => {
-  const skills = [
-    {
-      icon: '💻',
-      title: 'Programming Languages',
-      tags: ['Java', 'C/C++', 'Python', 'JavaScript', 'SQL']
-    },
-    {
-      icon: '🎯',
-      title: 'Frameworks & Libraries',
-      tags: ['Spring Boot', 'React', 'WebSocket', 'REST APIs']
-    },
-    {
-      icon: '🗄️',
-      title: 'Database Management',
-      tags: ['PostgreSQL', 'MySQL', 'SQL Optimization']
-    },
-    {
-      icon: '🛠️',
-      title: 'Development Tools',
-      tags: ['VS Code', 'IntelliJ IDEA', 'Docker', 'Postman', 'Git']
-    },
-    {
-      icon: '🧠',
-      title: 'Core Competencies',
-      tags: ['Data Structures', 'Algorithms', 'Problem Solving', 'System Design']
-    },
-    {
-      icon: '⚙️',
-      title: 'Software Engineering',
-      tags: ['OOP', 'Microservices', 'CI/CD', 'Multithreading']
-    }
-  ];
-  
+    return () => clearInterval(timer);
+  }, [roles.length]);
+
   return (
-    <section id="skills" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="home" className="hero-wrap">
+      <div className="hero-orb hero-orb-left" />
+      <div className="hero-orb hero-orb-right" />
+
+      <div className="shell hero-grid">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-20"
+          variants={staggerParent}
+          initial="hidden"
+          animate="visible"
+          className="hero-copy"
         >
-          <div className="text-cyan-400 text-sm font-bold tracking-widest mb-4 uppercase">
-            Technical Arsenal
+          <motion.div variants={fadeUp} className="status-pill">
+            Open To Full-Time Software Engineering Roles
+          </motion.div>
+
+          <motion.h1 variants={fadeUp}>
+            Building reliable systems with <span className="text-gradient">speed, scale, and style.</span>
+          </motion.h1>
+
+          <motion.p variants={fadeUp}>
+            I am Parthib Saha, a recent CSE graduate who has solved 3000+ algorithmic problems and loves turning
+            hard engineering challenges into simple, elegant products.
+          </motion.p>
+
+          <motion.div variants={fadeUp} className="hero-role-switcher">
+            <span>Now focused on:</span>
+            <strong>{roles[roleIndex]}</strong>
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="hero-actions">
+            <a href="#projects" className="btn-primary">
+              Explore Projects
+            </a>
+            <a href="#contact" className="btn-secondary">
+              Let&apos;s Connect
+            </a>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="hero-panel"
+        >
+          <div className="hero-panel-title">Career Snapshot</div>
+
+          <div className="hero-stats-grid">
+            {heroStats.map((item, index) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 + index * 0.1, duration: 0.45 }}
+                className="stat-card"
+              >
+                <div className="stat-number">
+                  <AnimatedCounter end={item.value} suffix={item.suffix} />
+                </div>
+                <div className="stat-label">{item.label}</div>
+              </motion.div>
+            ))}
           </div>
-          <h2 className="text-5xl md:text-6xl font-black text-white">
-            Skills & Expertise
-          </h2>
+
         </motion.div>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {skills.map((skill, i) => (
-            <SkillCard key={skill.title} {...skill} delay={i * 0.1} />
-          ))}
-        </div>
       </div>
+
+      <SignalStrip className="hero-signal-strip" />
     </section>
   );
 };
 
-// Competitive Programming Section
-const CompetitiveSection = () => {
-  const platforms = [
-    { name: 'Codeforces', count: '1600+' },
-    { name: 'LeetCode', count: '1000+' },
-    { name: 'AtCoder', count: '300+' },
-    { name: 'CodeChef', count: '200+' },
-    { name: 'Beecrowd', count: '100+' },
-    { name: 'HackerRank', count: '50+' }
-  ];
-  
-  const achievements = [
-    {
-      platform: 'Codeforces',
-      title: 'Specialist (Max Rating: 1428)',
-      desc: 'Ranked 27th (Div 3) and 70th (Div 2) in Bangladesh',
-      link: 'https://codeforces.com/profile/Parthib_Saha'
-    },
-    {
-      platform: 'CodeChef',
-      title: '4★ Coder (Max Rating: 1800)',
-      desc: 'Ranked 35th (Div 2) in Bangladesh',
-      link: 'https://www.codechef.com/users/parthib53'
-    },
-    {
-      platform: 'LeetCode',
-      title: 'Knight (Max Rating: 1914)',
-      desc: 'Top performer with consistent problem-solving excellence',
-      link: 'https://leetcode.com/u/parthibsahaprattus/'
-    },
-    {
-      platform: 'ICPC',
-      title: 'Honorable Mention',
-      desc: 'Team DIU_StriverS - Asia Dhaka Regional Preliminary',
-      link: 'https://icpc.global/ICPCID/2GBDKQE5HN4G'
-    }
-  ];
-  
-  return (
-    <section id="competitive" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-20"
-        >
-          <div className="text-cyan-400 text-sm font-bold tracking-widest mb-4 uppercase">
-            Problem Solving Excellence
-          </div>
-          <h2 className="text-5xl md:text-6xl font-black text-white">
-            Competitive Programming
-          </h2>
-        </motion.div>
-        
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Stats Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="relative bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-10 overflow-hidden"
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl"
-            />
-            
-            <h3 className="text-3xl font-bold text-white mb-8 relative z-10">
-              Problem Solving Stats
-            </h3>
-            
-            <div className="space-y-4 relative z-10">
-              {platforms.map((platform, i) => (
-                <motion.div
-                  key={platform.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  whileHover={{ x: 10 }}
-                  className="flex justify-between items-center py-4 border-b border-slate-700/50 last:border-0 cursor-pointer group"
-                >
-                  <span className="text-slate-300 font-semibold group-hover:text-cyan-400 transition-colors">
-                    {platform.name}
+const SkillsSection = () => (
+  <section id="skills" className="section-block">
+    <div className="shell">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={staggerParent}>
+        <SectionHeader
+          eyebrow="Core Expertise"
+        />
+
+        <div className="cards-grid three-col">
+          {skillGroups.map((skill) => (
+            <motion.article
+              key={skill.title}
+              variants={fadeUp}
+              whileHover={{ y: -8 }}
+              transition={{ duration: 0.3 }}
+              className={`glass-card interactive-surface ${skill.featured ? 'ai-skill-card' : ''}`}
+              onMouseMove={setSpotlightPosition}
+              onMouseLeave={clearSpotlight}
+            >
+              <div className="card-icon">{skill.icon}</div>
+              <h3>{skill.title}</h3>
+              <div className="chip-wrap">
+                {skill.tags.map((tag) => (
+                  <span key={tag} className={`chip ${skill.featured ? 'ai-chip' : ''}`}>
+                    {tag}
                   </span>
-                  <span className="text-3xl font-black text-cyan-400">
-                    {platform.count}
-                  </span>
-                </motion.div>
+                ))}
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  </section>
+);
+
+const CompetitiveSection = () => (
+  <section id="competitive" className="section-block alt-surface">
+    <div className="shell">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={staggerParent}>
+        <SectionHeader
+          eyebrow="Competitive Programming"
+          subtitle="A lifelong passion reflected in 3000+ solved problems, top-tier global rankings, and a commitment to continuous growth in algorithmic mastery."
+        />
+
+        <div className="split-grid">
+          <motion.div variants={fadeUp} className="glass-card tall-card interactive-surface" onMouseMove={setSpotlightPosition} onMouseLeave={clearSpotlight}>
+            <h3>Problems Solved</h3>
+            <div className="platform-list">
+              {platforms.map((platform) => (
+                <div key={platform.name} className="platform-row">
+                  <span>{platform.name}</span>
+                  <strong className={platform.tone === 'amber' ? 'tone-amber' : 'tone-teal'}>{platform.solved}</strong>
+                </div>
               ))}
             </div>
           </motion.div>
-          
-          {/* Achievements */}
-          <div className="space-y-6">
-            {achievements.map((achievement, i) => (
+
+          <div className="stack-col">
+            {achievements.map((achievement) => (
               <motion.a
                 key={achievement.platform}
+                variants={fadeUp}
                 href={achievement.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ x: 10, scale: 1.02 }}
-                className="block group relative bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-3xl p-8 overflow-hidden"
+                className="glass-card achievement-link"
+                onMouseMove={setSpotlightPosition}
+                onMouseLeave={clearSpotlight}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
-                <div className="relative z-10">
-                  <div className="text-purple-400 text-xs font-bold tracking-widest mb-3 uppercase">
-                    {achievement.platform}
-                  </div>
-                  
-                  <h4 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
-                    {achievement.title}
-                  </h4>
-                  
-                  <p className="text-slate-400 text-sm mb-4">
-                    {achievement.desc}
-                  </p>
-                  
-                  <div className="flex items-center gap-2 text-purple-400 text-sm font-semibold group-hover:gap-4 transition-all">
-                    <span>View Profile</span>
-                    <span>→</span>
-                  </div>
-                </div>
+                <div className="section-eyebrow mini">{achievement.platform}</div>
+                <h4>{achievement.title}</h4>
+                <p>{achievement.desc}</p>
+                <span className="inline-link">Open Profile</span>
               </motion.a>
             ))}
           </div>
         </div>
-      </div>
-    </section>
-  );
-};
+      </motion.div>
+    </div>
+  </section>
+);
 
-// Volunteer Section
-const VolunteerSection = () => {
-  const experiences = [
-    {
-      icon: '📝',
-      period: '2022 - 2024',
-      title: 'Problem Setter & Judge',
-      org: 'Takeoff Programming Contest, DIU',
-      desc: 'Authored and rigorously tested competitive programming problems for university-level contests. Ensured problem quality, test case coverage, and fair difficulty distribution to challenge participants effectively.',
-      tags: ['Problem Design', 'Test Case Creation', 'Contest Management']
-    },
-    {
-      icon: '👨‍🏫',
-      period: '2022 - 2024',
-      title: 'Trainer & Course Prefect',
-      org: 'Data Structures & Algorithms Course',
-      desc: 'Mentored students in mastering data structures and algorithms through hands-on problem-solving sessions. Guided peers in competitive programming strategies and helped build strong foundational coding skills.',
-      tags: ['Teaching', 'Mentorship', 'DSA Training']
-    }
-  ];
-  
-  return (
-    <section id="volunteer" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-20"
-        >
-          <div className="text-cyan-400 text-sm font-bold tracking-widest mb-4 uppercase">
-            Giving Back to Community
-          </div>
-          <h2 className="text-5xl md:text-6xl font-black text-white">
-            Volunteer Experience
-          </h2>
-        </motion.div>
-        
-        <div className="grid lg:grid-cols-2 gap-8">
-          {experiences.map((exp, i) => (
-            <motion.div
-              key={exp.title}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.2 }}
-              whileHover={{ y: -10 }}
-              className="group relative bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-3xl p-10 overflow-hidden"
+const ExtracurricularSection = () => (
+  <section id="extracurricular" className="section-block">
+    <div className="shell">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={staggerParent}>
+        <SectionHeader
+          eyebrow="Extracurricular Activities"
+          subtitle="I enjoy creating learning momentum in teams and communities around algorithms and software craft."
+        />
+
+        <div className="cards-grid two-col">
+          {extracurricularExperiences.map((item) => (
+            <motion.article
+              key={item.title}
+              variants={fadeUp}
+              className="glass-card timeline-card interactive-surface"
+              onMouseMove={setSpotlightPosition}
+              onMouseLeave={clearSpotlight}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-10">
-                <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                  {exp.icon}
-                </div>
-                
-                <div className="inline-block px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded-full text-xs text-pink-400 font-bold mb-4">
-                  {exp.period}
-                </div>
-                
-                <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
-                  {exp.title}
-                </h3>
-                
-                <p className="text-cyan-400 font-semibold mb-4">
-                  {exp.org}
-                </p>
-                
-                <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                  {exp.desc}
-                </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  {exp.tags.map((tag, j) => (
-                    <motion.span
-                      key={tag}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.2 + j * 0.05 }}
-                      className="px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-xs text-pink-400 font-semibold"
-                    >
-                      {tag}
-                    </motion.span>
+              <div className="timeline-top">
+                <span className="card-icon">{item.icon}</span>
+                <span className="period-pill">{item.period}</span>
+              </div>
+              <h3>{item.title}</h3>
+              <h4>{item.org}</h4>
+              <p>{item.desc}</p>
+              <div className="chip-wrap">
+                {item.tags.map((tag) => (
+                  <span key={tag} className="chip soft">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  </section>
+);
+
+const ProjectsSection = () => (
+  <section id="projects" className="section-block alt-surface">
+    <div className="shell">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={staggerParent}>
+        <SectionHeader
+          eyebrow="Featured Projects"
+          subtitle="A mix of intelligent automation and real-time systems designed for reliability and scale."
+        />
+
+        <div className="project-stack">
+          {projects.map((project) => (
+            <motion.article
+              key={project.title}
+              variants={fadeUp}
+              className="project-card interactive-surface"
+              onMouseMove={setSpotlightPosition}
+              onMouseLeave={clearSpotlight}
+            >
+              <div className="project-visual">
+                <span>{project.icon}</span>
+              </div>
+              <div className="project-content">
+                <div className="section-eyebrow mini">{project.label}</div>
+                <h3>{project.title}</h3>
+                <p>{project.description}</p>
+                <div className="project-highlights">
+                  {project.highlights.map((highlight) => (
+                    <div key={highlight} className="project-highlight">
+                      {highlight}
+                    </div>
                   ))}
                 </div>
+                <div className="chip-wrap">
+                  {project.tech.map((tech) => (
+                    <span key={tech} className="chip">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+                <a href={project.link} target="_blank" rel="noopener noreferrer" className="inline-link">
+                  View Repository
+                </a>
               </div>
-            </motion.div>
+            </motion.article>
           ))}
         </div>
-      </div>
-    </section>
-  );
-};
+      </motion.div>
+    </div>
+  </section>
+);
 
-// Project Card Component
-const ProjectCard = ({ project, index }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 100 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.8, delay: index * 0.2 }}
-      whileHover={{ scale: 1.02 }}
-      className="group relative bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-3xl overflow-hidden"
-    >
-      <div className="grid lg:grid-cols-2">
-        {/* Project Visual */}
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="relative h-80 lg:h-full bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 flex items-center justify-center overflow-hidden"
-        >
-          <motion.div
-            animate={{
-              scale: [1, 1.2, 1],
-              rotate: [0, 180, 360],
-            }}
-            transition={{ duration: 20, repeat: Infinity }}
-            className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent blur-3xl"
-          />
-          <div className="text-8xl z-10">{project.icon}</div>
-        </motion.div>
-        
-        {/* Project Content */}
-        <div className="p-10 flex flex-col justify-center">
-          <div className="text-cyan-400 text-xs font-bold tracking-widest mb-4 uppercase">
-            {project.label}
-          </div>
-          
-          <h3 className="text-4xl font-black text-white mb-4 group-hover:text-cyan-400 transition-colors">
-            {project.title}
-          </h3>
-          
-          <p className="text-slate-400 leading-relaxed mb-6">
-            {project.description}
-          </p>
-          
-          <div className="flex flex-wrap gap-2 mb-6">
-            {project.tech.map((tech, i) => (
-              <motion.span
-                key={tech}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: index * 0.2 + i * 0.05 }}
-                className="px-3 py-1 bg-purple-500/10 border border-purple-500/30 rounded-full text-xs text-purple-400 font-semibold"
-              >
-                {tech}
-              </motion.span>
-            ))}
-          </div>
-          
-          <motion.a
-            href={project.link}
-            whileHover={{ x: 10 }}
-            className="inline-flex items-center gap-2 text-cyan-400 font-bold text-sm group-hover:gap-4 transition-all"
-          >
-            <span>View Project</span>
-            <span>→</span>
-          </motion.a>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+const EducationSection = () => (
+  <section id="education" className="section-block">
+    <div className="shell">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={staggerParent}>
+        <SectionHeader
+          eyebrow="Education"
+        />
 
-// Projects Section
-const ProjectsSection = () => {
-  const projects = [
-    {
-      icon: '🤖',
-      label: 'AI-Powered Application',
-      title: 'HireSense',
-      description: 'Built a comprehensive job portal with AI-powered resume analysis, automated job matching, and intelligent candidate ranking. Features role-based authentication, real-time notifications, and a scalable REST API architecture.',
-      tech: ['Java', 'Spring Boot', 'PostgreSQL', 'React', 'LLMs (Groq)', 'JWT'],
-      link: 'https://github.com/parthibCsaha/AI-Powered-Job-Portal'
-    },
-    {
-      icon: '📈',
-      label: 'Real-Time Trading System',
-      title: 'Wall Street',
-      description: 'Designed and developed a high-performance order book matching engine simulating a stock exchange. Implemented advanced concurrency with ReentrantLock and real-time WebSocket notifications using STOMP protocol.',
-      tech: ['Java', 'Spring Boot', 'PostgreSQL', 'WebSocket', 'React', 'STOMP'],
-      link: 'https://github.com/parthibCsaha/Real-Time-Stock-Matching-Engine'
-    }
-  ];
-  
-  return (
-    <section id="projects" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-20"
-        >
-          <div className="text-cyan-400 text-sm font-bold tracking-widest mb-4 uppercase">
-            Featured Work
+        <motion.article variants={fadeUp} className="glass-card education-card interactive-surface" onMouseMove={setSpotlightPosition} onMouseLeave={clearSpotlight}>
+          <div>
+            <h3>B.Sc. in Computer Science and Engineering</h3>
+            <h4>Daffodil International University</h4>
+            <p>August 2021 - December 2025</p>
           </div>
-          <h2 className="text-5xl md:text-6xl font-black text-white">
-            Projects
-          </h2>
-        </motion.div>
-        
-        <div className="space-y-8">
-          {projects.map((project, i) => (
-            <ProjectCard key={project.title} project={project} index={i} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
 
-// Education Section
-const EducationSection = () => {
-  return (
-    <section id="education" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-20"
-        >
-          <div className="text-cyan-400 text-sm font-bold tracking-widest mb-4 uppercase">
-            Academic Background
+          <div className="cgpa-badge">
+            <strong>3.53</strong>
+            <span>CGPA / 4.00</span>
           </div>
-          <h2 className="text-5xl md:text-6xl font-black text-white">
-            Education
-          </h2>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          whileHover={{ scale: 1.02 }}
-          className="relative bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-12 overflow-hidden"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-full blur-3xl"
-          />
-          
-          <div className="grid lg:grid-cols-[2fr,1fr] gap-12 items-center relative z-10">
-            <div>
-              <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
-                B.Sc. in Computer Science and Engineering
-              </h3>
-              <p className="text-xl text-slate-300 font-semibold mb-2">
-                Daffodil International University
-              </p>
-              <p className="text-slate-500">
-                August 2021 - September 2025
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                className="text-7xl md:text-8xl font-black bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent"
-              >
-                3.53
-              </motion.div>
-              <div className="text-slate-500 text-sm uppercase tracking-widest font-bold mt-2">
-                CGPA / 4.00
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-};
+        </motion.article>
+      </motion.div>
+    </div>
+  </section>
+);
 
-// Contact Section
-const ContactSection = () => {
-  const contacts = [
-    { icon: '📧', label: 'Email', link: 'mailto:parthibsahaprattus@gmail.com' },
-    { icon: '💼', label: 'LinkedIn', link: 'https://www.linkedin.com/in/parthib-saha-32b547260/' },
-    { icon: '🐙', label: 'GitHub', link: 'https://github.com/parthibCsaha' },
-    { icon: '📱', label: 'Phone', link: 'tel:+8801704853732' }
-  ];
-  
-  return (
-    <section id="contact" className="py-32 relative">
-      <div className="max-w-4xl mx-auto px-6 text-center">
-        <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-5xl md:text-7xl font-black text-white mb-6"
-        >
-          Let's Build Something{' '}
-          <span className="bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
-            Amazing
-          </span>{' '}
-          Together
-        </motion.h2>
-        
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="text-xl text-slate-400 mb-12"
-        >
-          I'm always open to discussing new projects, creative ideas, or opportunities to be part of your vision.
-        </motion.p>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
-          className="flex flex-wrap justify-center gap-4"
-        >
-          {contacts.map((contact, i) => (
+const ContactSection = () => (
+  <section id="contact" className="section-block contact-block">
+    <div className="shell">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={staggerParent}>
+        <SectionHeader
+          eyebrow="Get In Touch"
+          title="Let&apos;s build something high-impact together"
+          subtitle="Open to full-time opportunities, collaborations, and technically ambitious product teams."
+        />
+
+        <div className="cards-grid two-col">
+          {contacts.map((contact) => (
             <motion.a
               key={contact.label}
+              variants={fadeUp}
               href={contact.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.6 + i * 0.1 }}
-              whileHover={{ 
-                y: -5, 
-                scale: 1.05,
-                boxShadow: '0 20px 50px rgba(0, 245, 255, 0.3)'
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-3 px-8 py-4 bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-full text-slate-300 font-semibold hover:border-cyan-500 hover:bg-cyan-500/10 transition-all"
+              target={contact.link.startsWith('http') ? '_blank' : undefined}
+              rel={contact.link.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="glass-card contact-card interactive-surface"
+              onMouseMove={setSpotlightPosition}
+              onMouseLeave={clearSpotlight}
             >
-              <span className="text-2xl">{contact.icon}</span>
-              <span>{contact.label}</span>
+              <div className="card-icon">{contact.icon}</div>
+              <h3>{contact.label}</h3>
+              <p>{contact.text}</p>
             </motion.a>
           ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-};
-
-// Footer
-const Footer = () => {
-  return (
-    <footer className="py-12 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-6 text-center">
-        <p className="text-slate-500 text-sm">
-          &copy; 2026 Parthib Saha. Crafted with passion and code.
-        </p>
-      </div>
-    </footer>
-  );
-};
-
-// Main App Component
-const App = () => {
-  return (
-    <div className="bg-slate-950 text-white min-h-screen font-sans antialiased">
-      <ParticleBackground />
-      
-      <Navbar />
-      <HeroSection />
-      <SkillsSection />
-      <CompetitiveSection />
-      <VolunteerSection />
-      <ProjectsSection />
-      <EducationSection />
-      <ContactSection />
-      <Footer />
-      
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap');
-        
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        body {
-          font-family: 'Outfit', sans-serif;
-          overflow-x: hidden;
-        }
-        
-        @keyframes gradient {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-        
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 5s ease infinite;
-        }
-        
-        ::-webkit-scrollbar {
-          width: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-          background: #0f172a;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, #00f5ff, #7c3aed);
-          border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, #00d9ff, #6d28d9);
-        }
-      `}</style>
+        </div>
+      </motion.div>
     </div>
-  );
-};
+  </section>
+);
+
+const Footer = () => (
+  <footer className="site-footer">
+    <div className="shell">
+      <p>&copy; 2026 Parthib Saha. Designed and engineered with intention.</p>
+    </div>
+  </footer>
+);
+
+const App = () => (
+  <div className="app-root">
+    <ScrollProgress />
+    <AuroraBackground />
+    <CodeStreamBackground />
+    <ParticleBackground />
+    <CursorAura />
+    <div className="noise-overlay" />
+
+    <Navbar />
+    <HeroSection />
+    <SkillsSection />
+    <CompetitiveSection />
+    <ExtracurricularSection />
+    <ProjectsSection />
+    <EducationSection />
+    <ContactSection />
+    <Footer />
+  </div>
+);
 
 export default App;
