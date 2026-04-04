@@ -1263,20 +1263,12 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
+  html {
     scroll-behavior: auto !important;
   }
 
   .cursor-aura,
   .cursor-aura-secondary {
-    display: none !important;
-  }
-
-  .code-stream-bg {
     display: none !important;
   }
 

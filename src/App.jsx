@@ -233,6 +233,20 @@ const clearSpotlight = (event) => {
   card.style.removeProperty('--spot-y');
 };
 
+const subscribeToMediaQueryChange = (mediaQuery, listener) => {
+  if (typeof mediaQuery.addEventListener === 'function') {
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }
+
+  if (typeof mediaQuery.addListener === 'function') {
+    mediaQuery.addListener(listener);
+    return () => mediaQuery.removeListener(listener);
+  }
+
+  return () => {};
+};
+
 const ScrollProgress = () => {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -257,8 +271,11 @@ const CursorAura = () => {
   useEffect(() => {
     if (reduceMotion) return undefined;
 
+    if (typeof window.matchMedia !== 'function') return undefined;
+
     const mediaQuery = window.matchMedia('(pointer:fine)');
     const syncPointerType = () => setEnabled(mediaQuery.matches);
+    const unsubscribeMediaQuery = subscribeToMediaQueryChange(mediaQuery, syncPointerType);
     syncPointerType();
 
     const onMove = (event) => {
@@ -267,11 +284,10 @@ const CursorAura = () => {
     };
 
     window.addEventListener('pointermove', onMove);
-    mediaQuery.addEventListener('change', syncPointerType);
 
     return () => {
       window.removeEventListener('pointermove', onMove);
-      mediaQuery.removeEventListener('change', syncPointerType);
+      unsubscribeMediaQuery();
     };
   }, [reduceMotion, x, y]);
 
@@ -286,24 +302,22 @@ const CursorAura = () => {
 };
 
 const AuroraBackground = () => {
-  const reduceMotion = useReducedMotion();
-
   return (
     <div className="aurora-bg" aria-hidden="true">
       <motion.div
         className="aurora-wave aurora-wave-teal"
-        animate={reduceMotion ? { x: 0, y: 0, scale: 1 } : { x: [0, 70, -20, 0], y: [0, -35, 20, 0], scale: [1, 1.08, 0.98, 1] }}
-        transition={reduceMotion ? { duration: 0 } : { duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ x: [0, 70, -20, 0], y: [0, -35, 20, 0], scale: [1, 1.08, 0.98, 1] }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         className="aurora-wave aurora-wave-amber"
-        animate={reduceMotion ? { x: 0, y: 0, scale: 1 } : { x: [0, -85, 35, 0], y: [0, 25, -45, 0], scale: [1, 0.96, 1.06, 1] }}
-        transition={reduceMotion ? { duration: 0 } : { duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ x: [0, -85, 35, 0], y: [0, 25, -45, 0], scale: [1, 0.96, 1.06, 1] }}
+        transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         className="aurora-wave aurora-wave-indigo"
-        animate={reduceMotion ? { x: 0, y: 0, scale: 1 } : { x: [0, 45, -55, 0], y: [0, 38, -28, 0], scale: [1, 1.05, 1, 1] }}
-        transition={reduceMotion ? { duration: 0 } : { duration: 34, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ x: [0, 45, -55, 0], y: [0, 38, -28, 0], scale: [1, 1.05, 1, 1] }}
+        transition={{ duration: 34, repeat: Infinity, ease: 'easeInOut' }}
       />
     </div>
   );
@@ -314,11 +328,15 @@ const CodeStreamBackground = () => {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reduceMotion) return undefined;
-
     const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
+
+    const isCoarsePointer = typeof window.matchMedia === 'function' && window.matchMedia('(pointer:coarse)').matches;
+    const isCompactViewport = Math.min(window.innerWidth, window.innerHeight) < 760;
+    const lowPowerMode = reduceMotion || isCoarsePointer || isCompactViewport || (navigator.hardwareConcurrency || 8) <= 4;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 1.8);
     let width = window.innerWidth;
@@ -326,8 +344,8 @@ const CodeStreamBackground = () => {
     let animationFrameId;
     let lastTime = 0;
 
-    const fontSize = 14;
-    const lineHeight = 24;
+    const fontSize = lowPowerMode ? 13 : 14;
+    const lineHeight = lowPowerMode ? 28 : 24;
     let rows = [];
 
     const pickSnippet = () => codeStreamSnippets[Math.floor(Math.random() * codeStreamSnippets.length)];
@@ -343,8 +361,8 @@ const CodeStreamBackground = () => {
         text,
         textWidth,
         x: startX,
-        speed: 22 + Math.random() * 34,
-        alpha: 0.08 + Math.random() * 0.11,
+        speed: (lowPowerMode ? 18 : 22) + Math.random() * (lowPowerMode ? 24 : 34),
+        alpha: (lowPowerMode ? 0.06 : 0.08) + Math.random() * (lowPowerMode ? 0.08 : 0.11),
         tint: Math.random() > 0.8 ? 'amber' : 'teal',
         cursorOffset: Math.random(),
         cursorBlink: 1.5 + Math.random() * 1.4,
@@ -352,7 +370,7 @@ const CodeStreamBackground = () => {
     };
 
     const setupRows = () => {
-      const totalRows = Math.floor(height / lineHeight) + 4;
+      const totalRows = Math.floor(height / lineHeight) + (lowPowerMode ? 2 : 4);
       rows = Array.from({ length: totalRows }, (_, index) => createRow((index + 1) * lineHeight - 6, true));
     };
 
@@ -416,8 +434,6 @@ const CodeStreamBackground = () => {
     };
   }, [reduceMotion]);
 
-  if (reduceMotion) return null;
-
   return <canvas ref={canvasRef} className="code-stream-bg" aria-hidden="true" />;
 };
 
@@ -427,8 +443,14 @@ const ParticleBackground = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
+
+    const isCoarsePointer = typeof window.matchMedia === 'function' && window.matchMedia('(pointer:coarse)').matches;
+    const isCompactViewport = Math.min(window.innerWidth, window.innerHeight) < 760;
+    const lowPowerMode = reduceMotion || isCoarsePointer || isCompactViewport || (navigator.hardwareConcurrency || 8) <= 4;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 1.8);
     let width = window.innerWidth;
@@ -449,8 +471,10 @@ const ParticleBackground = () => {
     });
 
     const getParticleCount = () => {
-      const density = reduceMotion ? 30000 : 21000;
-      return Math.min(140, Math.max(52, Math.floor((width * height) / density)));
+      const density = lowPowerMode ? 42000 : 21000;
+      const minCount = lowPowerMode ? 28 : 52;
+      const maxCount = lowPowerMode ? 84 : 140;
+      return Math.min(maxCount, Math.max(minCount, Math.floor((width * height) / density)));
     };
 
     let particles = [];
@@ -481,7 +505,7 @@ const ParticleBackground = () => {
 
       particles.forEach((particle) => {
         const angle = fieldAngle(particle.x, particle.y, time);
-        const strength = reduceMotion ? 0.011 : 0.019;
+        const strength = lowPowerMode ? 0.011 : 0.019;
 
         particle.vx += Math.cos(angle) * strength;
         particle.vy += Math.sin(angle) * strength;
@@ -490,9 +514,9 @@ const ParticleBackground = () => {
           const dx = pointer.x - particle.x;
           const dy = pointer.y - particle.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const radius = 220;
+          const radius = lowPowerMode ? 170 : 220;
           if (dist > 0 && dist < radius) {
-            const pull = ((radius - dist) / radius) * (reduceMotion ? 0.02 : 0.05);
+            const pull = ((radius - dist) / radius) * (lowPowerMode ? 0.02 : 0.05);
             particle.vx += (dx / dist) * pull;
             particle.vy += (dy / dist) * pull;
           }
@@ -518,7 +542,7 @@ const ParticleBackground = () => {
         ctx.fill();
       });
 
-      if (!reduceMotion) {
+      if (!lowPowerMode) {
         for (let i = 0; i < particles.length; i += 1) {
           for (let j = i + 1; j < particles.length; j += 1) {
             const dx = particles[i].x - particles[j].x;
@@ -526,9 +550,9 @@ const ParticleBackground = () => {
             const distanceSquared = dx * dx + dy * dy;
             const limit = 105;
             if (distanceSquared < limit * limit) {
-            const alpha = 0.07 * (1 - distanceSquared / (limit * limit));
-            ctx.strokeStyle = `rgba(148, 216, 255, ${alpha})`;
-            ctx.lineWidth = 0.45;
+              const alpha = 0.07 * (1 - distanceSquared / (limit * limit));
+              ctx.strokeStyle = `rgba(148, 216, 255, ${alpha})`;
+              ctx.lineWidth = 0.45;
               ctx.beginPath();
               ctx.moveTo(particles[i].x, particles[i].y);
               ctx.lineTo(particles[j].x, particles[j].y);
@@ -542,8 +566,9 @@ const ParticleBackground = () => {
     };
 
     const onPointerMove = (event) => {
-      pointer.x = event.clientX;
-      pointer.y = event.clientY;
+      const point = 'touches' in event && event.touches.length > 0 ? event.touches[0] : event;
+      pointer.x = point.clientX;
+      pointer.y = point.clientY;
       pointer.active = true;
     };
 
@@ -555,14 +580,30 @@ const ParticleBackground = () => {
     animationFrameId = requestAnimationFrame(animate);
 
     window.addEventListener('resize', resize);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerleave', onPointerLeave);
+
+    if ('PointerEvent' in window) {
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerleave', onPointerLeave);
+    } else {
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseleave', onPointerLeave);
+      window.addEventListener('touchmove', onPointerMove, { passive: true });
+      window.addEventListener('touchend', onPointerLeave);
+    }
 
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', resize);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerleave', onPointerLeave);
+
+      if ('PointerEvent' in window) {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerleave', onPointerLeave);
+      } else {
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseleave', onPointerLeave);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerLeave);
+      }
     };
   }, [reduceMotion]);
 
